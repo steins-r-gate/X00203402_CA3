@@ -3,6 +3,11 @@ Flask Web Application for Calculator - CA3
 Provides web interface and REST API for the Calculator class
 Student: X00203402 - Roko Skugor
 """
+import os
+import sys
+
+# Ensure project root is on Python path (fixes Azure App Service imports)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, render_template_string, request, jsonify
 from src.calculator import Calculator

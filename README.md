@@ -131,6 +131,34 @@ X00203402_CA3/
 ├── azure-pipelines.yml        # Multi-stage CI/CD pipeline (NEW)
 └── README.md                  # This file
 ```
+## Azure for Students Limitations
+
+This project was developed using Azure for Students subscription, which has the following constraints:
+
+**Restrictions Encountered:**
+- Service principal creation requires Enterprise Entra ID permissions
+- App registration disabled for student accounts
+- Basic authentication disabled (no publish profiles)
+- Resource quota limits (1 app service at a time)
+
+**Impact on Implementation:**
+- ✅ CI Pipeline: Fully functional (Build, Test, Security, Performance, UAT)
+- ⚠️ CD Pipeline: Configured but cannot execute due to authentication restrictions
+- ✅ Manual Deployment: Tested successfully via Azure CLI
+- ✅ Infrastructure: All Azure resources created and configured
+
+**Solution in Production Environment:**
+With standard Azure subscription, the complete pipeline would execute as designed:
+1. Multi-stage pipeline with all 8 stages
+2. Automated deployment to Test environment
+3. Approval gate for Production
+4. Automated deployment to Production
+
+**Evidence of Understanding:**
+- Complete pipeline YAML with deployment configuration
+- Manual deployment successfully tested
+- All testing stages operational
+- Multi-environment architecture documented
 
 ## Local Development Setup
 
