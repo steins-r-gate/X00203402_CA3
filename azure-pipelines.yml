@@ -1,22 +1,6 @@
 # ============================================================================
 # Azure Pipeline for Python Calculator CI/CD - CA3
-# Multi-stage pipeline with Security, Performance, UAT, and Multi-Environment Deployment
 # Student: X00203402 - Roko Skugor
-# ============================================================================
-#
-# FULL 8-STAGE CI/CD PIPELINE:
-# ✅ Stage 1: Build - Package application as artifact
-# ✅ Stage 2: Unit Tests - 42 tests with 100% coverage
-# ✅ Stage 3: Security Tests - pip-audit + bandit SAST
-# ✅ Stage 4: Performance Tests - Locust load testing
-# ✅ Stage 5: Deploy to Test - Simulated deployment with validation
-# ✅ Stage 6: UAT Tests (Remote) - Selenium tests against local Test instance
-# ✅ Stage 7: Manual Approval Gate - Configured in Environments
-# ✅ Stage 8: Deploy to Production - Simulated deployment with validation
-#
-# NOTE: Deployment stages simulate Azure Web App deployment due to Azure for
-# Students quota limitations. All deployment configurations are production-ready
-# and demonstrate complete understanding of multi-environment CI/CD practices.
 # ============================================================================
 
 trigger:
@@ -42,12 +26,10 @@ variables:
   testAppUrl: 'https://calc-test-x00203402-b0ccczenhpd7gqfg.francecentral-01.azurewebsites.net'
   prodAppUrl: 'https://calc-prod-x00203402-fhgbdnfnagc2d2cz.francecentral-01.azurewebsites.net'
 
+stages:
 # ============================================================================
 # STAGE 1: BUILD
-# Purpose: Install dependencies, run static analysis, package application
-# Output: Publishable artifact for downstream stages
 # ============================================================================
-stages:
   - stage: Build
     displayName: 'Build and Package'
     jobs:
@@ -94,7 +76,6 @@ stages:
 
 # ============================================================================
 # STAGE 2: UNIT TESTS
-# Purpose: Run pytest suite with coverage enforcement (≥80%)
 # ============================================================================
   - stage: UnitTests
     displayName: 'Unit Tests with Coverage'
@@ -151,8 +132,6 @@ stages:
 
 # ============================================================================
 # STAGE 3: SECURITY TESTS
-# Purpose: Scan for vulnerabilities (dependency + SAST)
-# Tools: pip-audit (dependencies) + bandit (static analysis)
 # ============================================================================
   - stage: SecurityTests
     displayName: 'Security Testing'
@@ -209,8 +188,6 @@ stages:
 
 # ============================================================================
 # STAGE 4: PERFORMANCE TESTS
-# Purpose: Load testing to verify application performance
-# Tool: Locust (Python-based load testing)
 # ============================================================================
   - stage: PerformanceTests
     displayName: 'Performance Testing'
@@ -278,9 +255,7 @@ stages:
             condition: succeededOrFailed()
 
 # ============================================================================
-# STAGE 5: DEPLOY TO TEST ENVIRONMENT (SIMULATED)
-# Purpose: Validate deployment readiness and simulate Test deployment
-# Note: Simulates Azure Web App deployment due to quota limitations
+# STAGE 5: DEPLOY TO TEST (SIMULATED)
 # ============================================================================
   - stage: DeployTest
     displayName: 'Deploy to Test (Simulated)'
@@ -311,7 +286,6 @@ stages:
                     echo "============================================"
                     echo ""
                     echo "Target: Azure Web App (Test)"
-                    echo "App Name: calc-test-x00203402"
                     echo "URL: $(testAppUrl)"
                     echo "Runtime: Python 3.11"
                     echo "Startup Command: gunicorn --bind=0.0.0.0 --timeout 600 app:app"
@@ -319,13 +293,10 @@ stages:
                     echo "Deployment Package:"
                     ls -lh $(System.ArtifactsDirectory)/$(artifactName)/
                     echo ""
-                    echo "Package Contents:"
+                    echo "Package Contents (first 20 lines):"
                     unzip -l $(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip | head -20
                     echo ""
                     echo "✅ Artifact validated and ready for deployment"
-                    echo "✅ Configuration verified"
-                    echo "✅ In production environment, would deploy to Azure Web App"
-                    echo ""
                     echo "============================================"
                   displayName: 'Simulate Azure Web App deployment'
 
@@ -336,9 +307,9 @@ stages:
                   displayName: 'Verify Test deployment (simulated)'
 
 # ============================================================================
-# STAGE 6: UAT SELENIUM TESTS (AGAINST LOCAL TEST INSTANCE)
-# Purpose: Run automated UI tests simulating deployed Test environment
-# Tool: Selenium WebDriver with headless Chrome
+# STAGE 6: UAT SELENIUM TESTS (FIXED)
+# IMPORTANT FIX: Install ONLY Google Chrome and let Selenium Manager handle driver.
+# (No chromium-chromedriver install = no version mismatch)
 # ============================================================================
   - stage: UATTests
     displayName: 'UAT - Selenium Tests'
@@ -372,11 +343,21 @@ stages:
             displayName: 'Install dependencies'
 
           - script: |
-              wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-              sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
               sudo apt-get update
-              sudo apt-get install -y google-chrome-stable chromium-chromedriver
-            displayName: 'Install Chrome and ChromeDriver'
+              sudo apt-get install -y wget ca-certificates gnupg
+
+              wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+                | sudo gpg --dearmor -o /usr/share/keyrings/google-linux-signing-keyring.gpg
+
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-signing-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+                | sudo tee /etc/apt/sources.list.d/google-chrome.list
+
+              sudo apt-get update
+              sudo apt-get install -y google-chrome-stable
+
+              google-chrome --version
+              echo "##vso[task.setvariable variable=CHROME_BIN]/usr/bin/google-chrome"
+            displayName: 'Install Google Chrome (Selenium Manager will handle driver)'
 
           - script: |
               nohup python app.py > app.log 2>&1 &
@@ -388,11 +369,12 @@ stages:
 
           - script: |
               export TEST_URL=$(testUrl)
+              export CHROME_BIN="$(CHROME_BIN)"
               echo "Running UAT tests against: $TEST_URL"
-              echo "In production: Would test against $(testAppUrl)"
+              echo "Using CHROME_BIN: $CHROME_BIN"
               pytest tests/uat_selenium/ -v --junitxml=uat-results.xml --html=uat-report.html --self-contained-html
             displayName: 'Run Selenium UAT tests'
-            continueOnError: true
+            continueOnError: false
 
           - script: |
               if [ -f app.pid ]; then
@@ -406,7 +388,7 @@ stages:
             inputs:
               testResultsFormat: 'JUnit'
               testResultsFiles: '**/uat-results.xml'
-              failTaskOnFailedTests: false
+              failTaskOnFailedTests: true
               testRunTitle: 'UAT - Selenium Tests'
             condition: succeededOrFailed()
 
@@ -419,10 +401,7 @@ stages:
             condition: succeededOrFailed()
 
 # ============================================================================
-# STAGE 7: MANUAL APPROVAL GATE
-# Stage 8: DEPLOY TO PRODUCTION (SIMULATED)
-# Purpose: Manual approval gate + Production deployment simulation
-# Note: Demonstrates approval workflow and production deployment practices
+# STAGE 7/8: PRODUCTION (SIMULATED with Environment approvals)
 # ============================================================================
   - stage: DeployProduction
     displayName: 'Deploy to Production (Simulated)'
@@ -431,7 +410,7 @@ stages:
     jobs:
       - deployment: DeployProdJob
         displayName: 'Simulate Production Deployment'
-        environment: 'Production'  # Manual approval configured here
+        environment: 'Production'
         strategy:
           runOnce:
             deploy:
@@ -452,7 +431,6 @@ stages:
                     echo "✅ Manual approval received"
                     echo ""
                     echo "Target: Azure Web App (Production)"
-                    echo "App Name: calc-prod-x00203402"
                     echo "URL: $(prodAppUrl)"
                     echo "Runtime: Python 3.11"
                     echo "Startup Command: gunicorn --bind=0.0.0.0 --timeout 600 app:app"
@@ -461,22 +439,14 @@ stages:
                     ls -lh $(System.ArtifactsDirectory)/$(artifactName)/
                     echo ""
                     echo "✅ Artifact validated"
-                    echo "✅ Configuration verified"
                     echo "✅ Security scans passed"
                     echo "✅ UAT tests passed"
-                    echo "✅ In production environment, would deploy to Azure Web App"
-                    echo ""
                     echo "============================================"
                   displayName: 'Simulate Azure Web App deployment (Production)'
 
                 - script: |
-                    echo "Simulating production deployment verification..."
+                    echo "Simulating production verification..."
                     echo "In production: curl $(prodAppUrl)/health"
                     echo "✅ Production deployment would succeed"
-                    echo ""
-                    echo "Simulating smoke tests..."
-                    echo "In production: curl $(prodAppUrl)/"
-                    echo "✅ Application responding correctly"
-                    echo ""
                     echo "🎉 PRODUCTION DEPLOYMENT COMPLETE (SIMULATED)"
                   displayName: 'Verify Production deployment (simulated)'
