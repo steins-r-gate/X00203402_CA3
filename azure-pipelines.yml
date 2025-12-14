@@ -363,10 +363,9 @@ stages:
             export CHROME_BIN=/usr/bin/google-chrome
             export CHROMEDRIVER_PATH=/usr/bin/chromedriver
             echo "Running UAT tests against: $TEST_URL"
-            pytest tests/uat_selenium/ -v \
+            pytest tests/uat_selenium/ -v -o addopts="" \
               --junitxml=uat-results.xml \
-              --html=uat-report.html \
-              --self-contained-html
+              --html=uat-report.html --self-contained-html
           displayName: 'Run Selenium UAT tests'
 
         - script: |
