@@ -1,0 +1,103 @@
+# Bandit Security Scanner Configuration - CA3
+# Static Application Security Testing (SAST) for Python code
+# Student: X00203402 - Roko Skugor
+
+# Exclude patterns - don't scan these directories/files
+exclude_dirs:
+  - /tests/
+  - /venv/
+  - /.venv/
+  - /htmlcov/
+  - /.pytest_cache/
+  - /__pycache__/
+
+# Test IDs to skip (if any false positives arise)
+# Currently scanning all tests
+skips: []
+
+# Severity level threshold
+# Options: LOW, MEDIUM, HIGH
+# We want to catch everything for learning purposes
+severity: LOW
+
+# Confidence level threshold
+# Options: LOW, MEDIUM, HIGH
+confidence: LOW
+
+# Output format options
+# The pipeline will override this with JSON for artifacts
+# But this provides good terminal output during local dev
+format: txt
+
+# Scan targets
+targets:
+  - src/
+  - app.py
+
+# Plugin configurations
+plugins:
+  - B201  # flask_debug_true - Detects debug=True in Flask
+  - B301  # pickle usage - Insecure deserialization
+  - B302  # marshal usage
+  - B303  # MD5 usage - Weak cryptographic hash
+  - B304  # SHA1 usage
+  - B305  # cipher usage
+  - B306  # mktemp usage
+  - B307  # eval usage
+  - B308  # mark_safe usage
+  - B310  # urllib usage
+  - B311  # random usage - Not cryptographically secure
+  - B312  # telnetlib usage
+  - B313  # xml parsing vulnerabilities
+  - B314  # xml parsing vulnerabilities
+  - B315  # xml parsing vulnerabilities
+  - B316  # xml parsing vulnerabilities
+  - B317  # xml parsing vulnerabilities
+  - B318  # xml parsing vulnerabilities
+  - B319  # xml parsing vulnerabilities
+  - B320  # xml parsing vulnerabilities
+  - B321  # ftplib usage
+  - B323  # unverified SSL context
+  - B324  # insecure hash functions
+  - B325  # tempfile usage
+  - B401  # import_telnetlib
+  - B402  # import_ftplib
+  - B403  # import_pickle
+  - B404  # import_subprocess
+  - B405  # import_xml_etree
+  - B406  # import_xml_sax
+  - B407  # import_xml_expat
+  - B408  # import_xml_minidom
+  - B409  # import_xml_pulldom
+  - B410  # import_lxml
+  - B411  # import_xmlrpclib
+  - B412  # import_httpoxy
+  - B413  # import_pycrypto
+  - B501  # request_with_no_cert_validation
+  - B502  # ssl_with_bad_version
+  - B503  # ssl_with_bad_defaults
+  - B504  # ssl_with_no_version
+  - B505  # weak_cryptographic_key
+  - B506  # yaml_load
+  - B507  # ssh_no_host_key_verification
+  - B601  # paramiko_calls
+  - B602  # shell_injection
+  - B603  # subprocess_without_shell_equals_true
+  - B604  # any_other_function_with_shell_equals_true
+  - B605  # start_process_with_a_shell
+  - B606  # start_process_with_no_shell
+  - B607  # start_process_with_partial_path
+  - B608  # hardcoded_sql_expressions
+  - B609  # linux_commands_wildcard_injection
+  - B610  # django_extra_used
+  - B611  # django_rawsql_used
+  - B701  # jinja2_autoescape_false
+  - B702  # use_of_mako_templates
+  - B703  # django_mark_safe
+
+# Reporting options
+verbose: true
+aggregate: file
+
+# Number of lines of context to show in output
+context_lines: 3
