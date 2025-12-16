@@ -16,407 +16,426 @@ pr:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: "ubuntu-latest"
 
 variables:
-  python.version: '3.11'
-  artifactName: 'calculator-package'
-  testUrl: 'http://localhost:5000'
-  testAppUrl: 'https://calc-test-x00203402-b0ccczenhpd7gqfg.francecentral-01.azurewebsites.net'
-  prodAppUrl: 'https://calc-prod-x00203402-fhgbdnfnagc2d2cz.francecentral-01.azurewebsites.net'
+  python.version: "3.11"
+  artifactName: "calculator-package"
+  testUrl: "http://127.0.0.1:5000"
+  testAppUrl: "https://calc-test-x00203402-b0ccczenhpd7gqfg.francecentral-01.azurewebsites.net"
+  prodAppUrl: "https://calc-prod-x00203402-fhgbdnfnagc2d2cz.francecentral-01.azurewebsites.net"
 
 stages:
-# =========================
-# STAGE 1: BUILD
-# =========================
-- stage: Build
-  displayName: 'Build and Package'
-  jobs:
-    - job: BuildJob
-      displayName: 'Build Application'
-      steps:
-        - task: UsePythonVersion@0
-          displayName: 'Use Python $(python.version)'
-          inputs:
-            versionSpec: '$(python.version)'
-            addToPath: true
+  # ==========================================================================
+  # STAGE 1: BUILD
+  # ==========================================================================
+  - stage: Build
+    displayName: "Build and Package"
+    jobs:
+      - job: BuildJob
+        displayName: "Build Application"
+        steps:
+          - checkout: self
 
-        - script: |
-            python --version
-            pip --version
-          displayName: 'Display Python version'
+          - task: UsePythonVersion@0
+            displayName: "Use Python $(python.version)"
+            inputs:
+              versionSpec: "$(python.version)"
+              addToPath: true
 
-        - script: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
-          displayName: 'Install dependencies'
+          - script: |
+              set -e
+              python --version
+              python -m pip install --upgrade pip
+              pip --version
+            displayName: "Display Python version"
 
-        - script: |
-            pylint src/ --output-format=text --reports=y --score=yes || true
-          displayName: 'Run Pylint static analysis'
-          continueOnError: true
+          - script: |
+              set -e
+              pip install -r requirements.txt
+            displayName: "Install dependencies"
 
-        - task: ArchiveFiles@2
-          displayName: 'Package application'
-          inputs:
-            rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-            includeRootFolder: false
-            archiveType: 'zip'
-            archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
-            replaceExistingArchive: true
-            verbose: true
+          - script: |
+              pylint src/ --output-format=text --reports=y --score=yes || true
+            displayName: "Run Pylint static analysis"
+            continueOnError: true
 
-        - task: PublishBuildArtifacts@1
-          displayName: 'Publish build artifact'
-          inputs:
-            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-            ArtifactName: '$(artifactName)'
-            publishLocation: 'Container'
+          - task: ArchiveFiles@2
+            displayName: "Package application"
+            inputs:
+              rootFolderOrFile: "$(System.DefaultWorkingDirectory)"
+              includeRootFolder: false
+              archiveType: "zip"
+              archiveFile: "$(Build.ArtifactStagingDirectory)/$(artifactName).zip"
+              replaceExistingArchive: true
+              verbose: true
 
-# =========================
-# STAGE 2: UNIT TESTS
-# =========================
-- stage: UnitTests
-  displayName: 'Unit Tests with Coverage'
-  dependsOn: Build
-  jobs:
-    - job: TestJob
-      displayName: 'Run Unit Tests'
-      steps:
-        - task: DownloadBuildArtifacts@1
-          displayName: 'Download build artifact'
-          inputs:
-            buildType: 'current'
-            downloadType: 'single'
-            artifactName: '$(artifactName)'
-            downloadPath: '$(System.ArtifactsDirectory)'
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish build artifact"
+            inputs:
+              PathtoPublish: "$(Build.ArtifactStagingDirectory)"
+              ArtifactName: "$(artifactName)"
+              publishLocation: "Container"
 
-        - task: ExtractFiles@1
-          displayName: 'Extract application files'
-          inputs:
-            archiveFilePatterns: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-            destinationFolder: '$(System.DefaultWorkingDirectory)'
-            cleanDestinationFolder: true
+  # ==========================================================================
+  # STAGE 2: UNIT TESTS
+  # ==========================================================================
+  - stage: UnitTests
+    displayName: "Unit Tests with Coverage"
+    dependsOn: Build
+    jobs:
+      - job: TestJob
+        displayName: "Run Unit Tests"
+        steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: "Download build artifact"
+            inputs:
+              buildType: "current"
+              downloadType: "single"
+              artifactName: "$(artifactName)"
+              downloadPath: "$(System.ArtifactsDirectory)"
 
-        - task: UsePythonVersion@0
-          displayName: 'Use Python $(python.version)'
-          inputs:
-            versionSpec: '$(python.version)'
+          - task: ExtractFiles@1
+            displayName: "Extract application files"
+            inputs:
+              archiveFilePatterns: "$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip"
+              destinationFolder: "$(System.DefaultWorkingDirectory)"
+              cleanDestinationFolder: true
 
-        - script: |
-            pip install -r requirements.txt
-          displayName: 'Install dependencies'
+          - task: UsePythonVersion@0
+            displayName: "Use Python $(python.version)"
+            inputs:
+              versionSpec: "$(python.version)"
 
-        - script: |
-            pytest tests/test_calculator.py \
-              --cov=src --cov-report=xml --cov-report=html --cov-report=term \
-              --cov-fail-under=80 -v --junitxml=test-results.xml
-          displayName: 'Run pytest with coverage ≥80%'
+          - script: |
+              set -e
+              pip install -r requirements.txt
+            displayName: "Install dependencies"
 
-        - task: PublishTestResults@2
-          displayName: 'Publish unit test results'
-          inputs:
-            testResultsFormat: 'JUnit'
-            testResultsFiles: '**/test-results.xml'
-            failTaskOnFailedTests: true
-            testRunTitle: 'Unit Tests - Python $(python.version)'
-          condition: succeededOrFailed()
+          - script: |
+              set -e
+              pytest tests/test_calculator.py \
+                --cov=src \
+                --cov-report=xml \
+                --cov-report=html \
+                --cov-report=term-missing \
+                --cov-fail-under=80 \
+                -v --junitxml=test-results.xml
+            displayName: "Run pytest with coverage"
 
-        - task: PublishCodeCoverageResults@2
-          displayName: 'Publish code coverage'
-          inputs:
-            codeCoverageTool: 'Cobertura'
-            summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
-            reportDirectory: '$(System.DefaultWorkingDirectory)/htmlcov'
-            failIfCoverageEmpty: true
-          condition: succeededOrFailed()
+          - task: PublishTestResults@2
+            displayName: "Publish unit test results"
+            inputs:
+              testResultsFormat: "JUnit"
+              testResultsFiles: "**/test-results.xml"
+              failTaskOnFailedTests: true
+              testRunTitle: "Unit Tests - Python $(python.version)"
+            condition: succeededOrFailed()
 
-# =========================
-# STAGE 3: SECURITY TESTS
-# =========================
-- stage: SecurityTests
-  displayName: 'Security Testing'
-  dependsOn: Build
-  jobs:
-    - job: SecurityJob
-      displayName: 'Run Security Scans'
-      steps:
-        - task: DownloadBuildArtifacts@1
-          displayName: 'Download build artifact'
-          inputs:
-            buildType: 'current'
-            downloadType: 'single'
-            artifactName: '$(artifactName)'
-            downloadPath: '$(System.ArtifactsDirectory)'
+          - task: PublishCodeCoverageResults@2
+            displayName: "Publish code coverage"
+            inputs:
+              codeCoverageTool: "Cobertura"
+              summaryFileLocation: "$(System.DefaultWorkingDirectory)/coverage.xml"
+              reportDirectory: "$(System.DefaultWorkingDirectory)/htmlcov"
+              failIfCoverageEmpty: true
+            condition: succeededOrFailed()
 
-        - task: ExtractFiles@1
-          displayName: 'Extract application files'
-          inputs:
-            archiveFilePatterns: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-            destinationFolder: '$(System.DefaultWorkingDirectory)'
-            cleanDestinationFolder: true
+  # ==========================================================================
+  # STAGE 3: SECURITY TESTS
+  # ==========================================================================
+  - stage: SecurityTests
+    displayName: "Security Testing"
+    dependsOn: Build
+    jobs:
+      - job: SecurityJob
+        displayName: "Run Security Scans"
+        steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: "Download build artifact"
+            inputs:
+              buildType: "current"
+              downloadType: "single"
+              artifactName: "$(artifactName)"
+              downloadPath: "$(System.ArtifactsDirectory)"
 
-        - task: UsePythonVersion@0
-          displayName: 'Use Python $(python.version)'
-          inputs:
-            versionSpec: '$(python.version)'
+          - task: ExtractFiles@1
+            displayName: "Extract application files"
+            inputs:
+              archiveFilePatterns: "$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip"
+              destinationFolder: "$(System.DefaultWorkingDirectory)"
+              cleanDestinationFolder: true
 
-        - script: |
-            pip install -r requirements.txt
-          displayName: 'Install dependencies'
+          - task: UsePythonVersion@0
+            displayName: "Use Python $(python.version)"
+            inputs:
+              versionSpec: "$(python.version)"
 
-        - script: |
-            echo "Running pip-audit..."
-            pip-audit --desc --format json --output security-pip-audit.json || true
-            pip-audit --desc || true
-          displayName: 'Run pip-audit'
-          continueOnError: true
+          - script: |
+              set -e
+              pip install -r requirements.txt
+            displayName: "Install dependencies"
 
-        - script: |
-            echo "Running bandit..."
-            bandit -r src/ app.py -f json -o security-bandit.json || true
-            bandit -r src/ app.py -f txt || true
-          displayName: 'Run bandit (SAST)'
-          continueOnError: true
+          - script: |
+              echo "Running pip-audit..."
+              pip-audit --desc --format json --output security-pip-audit.json || true
+              pip-audit --desc || true
+            displayName: "Run pip-audit"
+            continueOnError: true
 
-        - task: PublishBuildArtifacts@1
-          displayName: 'Publish security scan results'
-          inputs:
-            PathtoPublish: '$(System.DefaultWorkingDirectory)'
-            ArtifactName: 'security-results'
-            publishLocation: 'Container'
-          condition: succeededOrFailed()
+          - script: |
+              echo "Running bandit..."
+              bandit -r src/ app.py -f json -o security-bandit.json || true
+              bandit -r src/ app.py -f txt || true
+            displayName: "Run bandit"
+            continueOnError: true
 
-# =========================
-# STAGE 4: PERFORMANCE TESTS
-# =========================
-- stage: PerformanceTests
-  displayName: 'Performance Testing'
-  dependsOn: Build
-  jobs:
-    - job: PerformanceJob
-      displayName: 'Run Load Tests'
-      steps:
-        - task: DownloadBuildArtifacts@1
-          displayName: 'Download build artifact'
-          inputs:
-            buildType: 'current'
-            downloadType: 'single'
-            artifactName: '$(artifactName)'
-            downloadPath: '$(System.ArtifactsDirectory)'
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish security scan results"
+            inputs:
+              PathtoPublish: "$(System.DefaultWorkingDirectory)"
+              ArtifactName: "security-results"
+              publishLocation: "Container"
+            condition: succeededOrFailed()
 
-        - task: ExtractFiles@1
-          displayName: 'Extract application files'
-          inputs:
-            archiveFilePatterns: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-            destinationFolder: '$(System.DefaultWorkingDirectory)'
-            cleanDestinationFolder: true
+  # ==========================================================================
+  # STAGE 4: PERFORMANCE TESTS
+  # ==========================================================================
+  - stage: PerformanceTests
+    displayName: "Performance Testing"
+    dependsOn: Build
+    jobs:
+      - job: PerformanceJob
+        displayName: "Run Load Tests"
+        steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: "Download build artifact"
+            inputs:
+              buildType: "current"
+              downloadType: "single"
+              artifactName: "$(artifactName)"
+              downloadPath: "$(System.ArtifactsDirectory)"
 
-        - task: UsePythonVersion@0
-          displayName: 'Use Python $(python.version)'
-          inputs:
-            versionSpec: '$(python.version)'
+          - task: ExtractFiles@1
+            displayName: "Extract application files"
+            inputs:
+              archiveFilePatterns: "$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip"
+              destinationFolder: "$(System.DefaultWorkingDirectory)"
+              cleanDestinationFolder: true
 
-        - script: |
-            pip install -r requirements.txt
-          displayName: 'Install dependencies'
+          - task: UsePythonVersion@0
+            displayName: "Use Python $(python.version)"
+            inputs:
+              versionSpec: "$(python.version)"
 
-        - script: |
-            nohup python app.py > app.log 2>&1 &
-            echo $! > app.pid
-            echo "Waiting for Flask..."
-            for i in {1..30}; do
-              if curl -fsS http://localhost:5000/health > /dev/null; then
-                echo "App is up!"
-                break
+          - script: |
+              set -e
+              pip install -r requirements.txt
+            displayName: "Install dependencies"
+
+          - script: |
+              set -e
+              nohup python -m flask --app app run --host 127.0.0.1 --port 5000 --no-debugger --no-reload > app.log 2>&1 &
+              echo $! > app.pid
+              echo "Waiting for Flask to start..."
+              sleep 8
+              tail -n 50 app.log || true
+            displayName: "Start Flask application"
+
+          - script: |
+              set -e
+              curl -fsS http://127.0.0.1:5000/health
+            displayName: "Verify application health"
+
+          - script: |
+              set -e
+              cd tests/performance
+              locust -f locustfile.py \
+                --headless \
+                --users 10 \
+                --spawn-rate 2 \
+                --run-time 30s \
+                --host http://127.0.0.1:5000 \
+                --html performance-report.html \
+                --csv performance-results
+            displayName: "Run Locust load test"
+
+          - script: |
+              if [ -f app.pid ]; then
+                kill "$(cat app.pid)" || true
               fi
-              sleep 2
-            done
-            curl -fsS http://localhost:5000/health
-            echo "---- app.log ----"
-            tail -n 200 app.log || true
-          displayName: 'Start Flask and wait for /health'
+            displayName: "Stop Flask application"
+            condition: always()
 
-        - script: |
-            cd tests/performance
-            locust -f locustfile.py --headless --users 10 --spawn-rate 2 \
-              --run-time 30s --host http://localhost:5000 \
-              --html performance-report.html --csv performance-results
-          displayName: 'Run Locust load test'
-          continueOnError: true
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish performance results"
+            inputs:
+              PathtoPublish: "$(System.DefaultWorkingDirectory)/tests/performance"
+              ArtifactName: "performance-results"
+              publishLocation: "Container"
+            condition: succeededOrFailed()
 
-        - script: |
-            if [ -f app.pid ]; then
-              kill $(cat app.pid) || true
-            fi
-          displayName: 'Stop Flask'
-          condition: always()
+  # ==========================================================================
+  # STAGE 5: DEPLOY TO TEST (SIMULATED)
+  # ==========================================================================
+  - stage: DeployTest
+    displayName: "Deploy to Test (Simulated)"
+    dependsOn:
+      - UnitTests
+      - SecurityTests
+      - PerformanceTests
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - deployment: DeployTestJob
+        displayName: "Simulate Test Deployment"
+        environment: "Test"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@1
+                  displayName: "Download build artifact"
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "$(artifactName)"
+                    downloadPath: "$(System.ArtifactsDirectory)"
 
-        - task: PublishBuildArtifacts@1
-          displayName: 'Publish performance results'
-          inputs:
-            PathtoPublish: '$(System.DefaultWorkingDirectory)/tests/performance'
-            ArtifactName: 'performance-results'
-            publishLocation: 'Container'
-          condition: succeededOrFailed()
+                - script: |
+                    set -e
+                    echo "SIMULATED DEPLOYMENT TO TEST"
+                    echo "URL: $(testAppUrl)"
+                    echo "Startup: gunicorn --bind=0.0.0.0 --timeout 600 app:app"
+                    ls -lh "$(System.ArtifactsDirectory)/$(artifactName)/"
+                    unzip -l "$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip" | head -20
+                    echo "Artifact validated."
+                  displayName: "Simulate Azure Web App deployment"
 
-# =========================
-# STAGE 5: DEPLOY TEST (SIMULATED)
-# =========================
-- stage: DeployTest
-  displayName: 'Deploy to Test (Simulated)'
-  dependsOn:
-    - UnitTests
-    - SecurityTests
-    - PerformanceTests
-  condition: succeeded()
-  jobs:
-    - deployment: DeployTestJob
-      displayName: 'Simulate Test Deployment'
-      environment: 'Test'
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-              - task: DownloadBuildArtifacts@1
-                displayName: 'Download build artifact'
-                inputs:
-                  buildType: 'current'
-                  downloadType: 'single'
-                  artifactName: '$(artifactName)'
-                  downloadPath: '$(System.ArtifactsDirectory)'
+                - script: |
+                    echo "Simulated health check: curl $(testAppUrl)/health"
+                    echo "Would succeed."
+                  displayName: "Verify Test deployment (simulated)"
 
-              - script: |
-                  echo "SIMULATED DEPLOYMENT TO TEST"
-                  echo "URL: $(testAppUrl)"
-                  ls -lh $(System.ArtifactsDirectory)/$(artifactName)/
-                  unzip -l $(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip | head -25
-                displayName: 'Simulate deploy'
+  # ==========================================================================
+  # STAGE 6: UAT TESTS (Selenium)
+  # ==========================================================================
+  - stage: UATTests
+    displayName: "UAT - Selenium Tests"
+    dependsOn: DeployTest
+    jobs:
+      - job: UATJob
+        displayName: "Run Selenium UAT"
+        steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: "Download build artifact"
+            inputs:
+              buildType: "current"
+              downloadType: "single"
+              artifactName: "$(artifactName)"
+              downloadPath: "$(System.ArtifactsDirectory)"
 
-# =========================
-# STAGE 6: UAT SELENIUM (LOCAL)
-# =========================
-- stage: UATTests
-  displayName: 'UAT - Selenium Tests'
-  dependsOn: DeployTest
-  jobs:
-    - job: UATJob
-      displayName: 'Run Selenium UAT'
-      steps:
-        - task: DownloadBuildArtifacts@1
-          displayName: 'Download build artifact'
-          inputs:
-            buildType: 'current'
-            downloadType: 'single'
-            artifactName: '$(artifactName)'
-            downloadPath: '$(System.ArtifactsDirectory)'
+          - task: ExtractFiles@1
+            displayName: "Extract application files"
+            inputs:
+              archiveFilePatterns: "$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip"
+              destinationFolder: "$(System.DefaultWorkingDirectory)"
+              cleanDestinationFolder: true
 
-        - task: ExtractFiles@1
-          displayName: 'Extract application files'
-          inputs:
-            archiveFilePatterns: '$(System.ArtifactsDirectory)/$(artifactName)/$(artifactName).zip'
-            destinationFolder: '$(System.DefaultWorkingDirectory)'
-            cleanDestinationFolder: true
+          - task: UsePythonVersion@0
+            displayName: "Use Python $(python.version)"
+            inputs:
+              versionSpec: "$(python.version)"
 
-        - task: UsePythonVersion@0
-          displayName: 'Use Python $(python.version)'
-          inputs:
-            versionSpec: '$(python.version)'
+          - script: |
+              set -e
+              pip install -r requirements.txt
+            displayName: "Install dependencies"
 
-        - script: |
-            pip install -r requirements.txt
-          displayName: 'Install dependencies'
+          - script: |
+              set -e
+              google-chrome --version || true
+              chromium --version || true
+              python -c "import selenium; print('selenium', selenium.__version__)"
+            displayName: "Check browser tooling (Selenium Manager will fetch driver)"
 
-        - script: |
-            set -e
-            sudo apt-get update
-            sudo apt-get install -y google-chrome-stable chromium-chromedriver
-            echo "Chrome:"
-            which google-chrome
-            google-chrome --version
-            echo "Chromedriver:"
-            which chromedriver || true
-            chromedriver --version || true
-          displayName: 'Install Chrome + Chromedriver (and print versions)'
+          - script: |
+              set -e
+              nohup python -m flask --app app run --host 127.0.0.1 --port 5000 --no-debugger --no-reload > app.log 2>&1 &
+              echo $! > app.pid
+              echo "Waiting for Flask to start..."
+              sleep 8
+              curl -fsS http://127.0.0.1:5000/health
+            displayName: "Start Flask (simulate Test)"
 
-        - script: |
-            nohup python app.py > app.log 2>&1 &
-            echo $! > app.pid
+          - script: |
+              set -e
+              export TEST_URL="$(testUrl)"
+              echo "Running UAT tests against: $TEST_URL"
+              pytest -p no:cov --override-ini addopts= tests/uat_selenium \
+                -v --junitxml=uat-results.xml \
+                --html=uat-report.html --self-contained-html
+            displayName: "Run Selenium UAT tests"
 
-            echo "Waiting for Flask /health..."
-            for i in {1..30}; do
-              if curl -fsS http://localhost:5000/health > /dev/null; then
-                echo "✅ App ready"
-                break
+          - script: |
+              if [ -f app.pid ]; then
+                kill "$(cat app.pid)" || true
               fi
-              sleep 2
-            done
+            displayName: "Stop Flask application"
+            condition: always()
 
-            echo "Health response:"
-            curl -fsS http://localhost:5000/health
-            echo "---- app.log ----"
-            tail -n 200 app.log || true
-          displayName: 'Start Flask and wait until ready'
+          - task: PublishTestResults@2
+            displayName: "Publish UAT test results"
+            inputs:
+              testResultsFormat: "JUnit"
+              testResultsFiles: "**/uat-results.xml"
+              failTaskOnFailedTests: true
+              testRunTitle: "UAT - Selenium Tests"
+            condition: succeededOrFailed()
 
-        - script: |
-            export TEST_URL=$(testUrl)
-            export CHROME_BIN=/usr/bin/google-chrome
-            export CHROMEDRIVER_PATH=/usr/bin/chromedriver
-            echo "Running UAT tests against: $TEST_URL"
-            pytest tests/uat_selenium/ -v -o addopts="" \
-              --junitxml=uat-results.xml \
-              --html=uat-report.html --self-contained-html
-          displayName: 'Run Selenium UAT tests'
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish UAT artifacts"
+            inputs:
+              PathtoPublish: "$(System.DefaultWorkingDirectory)"
+              ArtifactName: "uat-results"
+              publishLocation: "Container"
+            condition: succeededOrFailed()
 
-        - script: |
-            if [ -f app.pid ]; then
-              kill $(cat app.pid) || true
-            fi
-          displayName: 'Stop Flask'
-          condition: always()
+  # ==========================================================================
+  # STAGE 7: DEPLOY TO PRODUCTION (SIMULATED)
+  # ==========================================================================
+  - stage: DeployProduction
+    displayName: "Deploy to Production (Simulated)"
+    dependsOn: UATTests
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'main'))
+    jobs:
+      - deployment: DeployProdJob
+        displayName: "Simulate Production Deployment"
+        environment: "Production"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@1
+                  displayName: "Download build artifact"
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "$(artifactName)"
+                    downloadPath: "$(System.ArtifactsDirectory)"
 
-        - task: PublishTestResults@2
-          displayName: 'Publish UAT test results'
-          inputs:
-            testResultsFormat: 'JUnit'
-            testResultsFiles: '**/uat-results.xml'
-            failTaskOnFailedTests: true
-            testRunTitle: 'UAT - Selenium Tests'
-          condition: succeededOrFailed()
+                - script: |
+                    set -e
+                    echo "SIMULATED DEPLOYMENT TO PRODUCTION"
+                    echo "URL: $(prodAppUrl)"
+                    echo "Runtime: Python $(python.version)"
+                    echo "Startup: gunicorn --bind=0.0.0.0 --timeout 600 app:app"
+                    ls -lh "$(System.ArtifactsDirectory)/$(artifactName)/"
+                    echo "Artifact validated. Would deploy after approval."
+                  displayName: "Simulate Azure Web App deployment (Production)"
 
-        - task: PublishBuildArtifacts@1
-          displayName: 'Publish UAT artifacts'
-          inputs:
-            PathtoPublish: '$(System.DefaultWorkingDirectory)'
-            ArtifactName: 'uat-results'
-            publishLocation: 'Container'
-          condition: succeededOrFailed()
-
-# =========================
-# STAGE 7/8: PROD DEPLOY (SIMULATED) + APPROVAL VIA ENVIRONMENT
-# =========================
-- stage: DeployProduction
-  displayName: 'Deploy to Production (Simulated)'
-  dependsOn: UATTests
-  condition: succeeded()
-  jobs:
-    - deployment: DeployProdJob
-      displayName: 'Simulate Production Deployment'
-      environment: 'Production'
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-              - task: DownloadBuildArtifacts@1
-                displayName: 'Download build artifact'
-                inputs:
-                  buildType: 'current'
-                  downloadType: 'single'
-                  artifactName: '$(artifactName)'
-                  downloadPath: '$(System.ArtifactsDirectory)'
-
-              - script: |
-                  echo "SIMULATED DEPLOYMENT TO PRODUCTION"
-                  echo "URL: $(prodAppUrl)"
-                  ls -lh $(System.ArtifactsDirectory)/$(artifactName)/
-                displayName: 'Simulate prod deploy'
+                - script: |
+                    set -e
+                    echo "Simulated health check: curl $(prodAppUrl)/health"
+                    echo "Simulated smoke test:  curl $(prodAppUrl)/"
+                    echo "Production deployment verification would succeed."
+                  displayName: "Verify Production deployment (simulated)"
