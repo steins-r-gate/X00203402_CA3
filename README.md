@@ -1302,11 +1302,11 @@ No code was directly copied. All implementations were:
 ### Repository Information
 - **GitHub:** https://github.com/steins-r-gate/X00203402_CA3
 - **Branch:** main
-- **Last Commit:** [TO BE FILLED]
+- **Last Commit:** 10a628cd6de14a7f9ffb58dae7a997bdce05c16a
 
 ### Azure DevOps
 - **Project:** X00203402_CA3
-- **URL:** [TO BE FILLED]
+- **URL:** https://dev.azure.com/X00203402/X00203402_CA3
 
 ### Screencast
 - **Location:** OneDrive

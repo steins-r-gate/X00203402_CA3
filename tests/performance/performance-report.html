@@ -120,7 +120,7 @@ table.stats tr.total td {
 
         <div class="info">
             
-            <p>During: <span class="l10n datetime">2025-12-17 14:44:07</span> - <span class="l10n datetime">2025-12-17 14:44:37</span></p>
+            <p>During: <span class="l10n datetime">2025-12-17 17:16:42</span> - <span class="l10n datetime">2025-12-17 17:17:11</span></p>
             <p>Target Host: <span>http://localhost:5000</span></p>
             <p>Script: <span>locustfile.py</span></p>
         </div>
@@ -147,52 +147,52 @@ table.stats tr.total td {
                         <tr>
                             <td>GET</td>
                             <td>/</td>
-                            <td>11</td>
+                            <td>9</td>
                             <td>0</td>
-                            <td>2034</td>
-                            <td>2023</td>
-                            <td>2049</td>
+                            <td>2048</td>
+                            <td>2028</td>
+                            <td>2059</td>
                             <td>6086</td>
-                            <td>0.4</td>
+                            <td>0.3</td>
                             <td>0.0</td>
                         </tr>
                     
                         <tr>
                             <td>POST</td>
                             <td>/api/calculate</td>
-                            <td>41</td>
+                            <td>35</td>
                             <td>0</td>
-                            <td>2038</td>
-                            <td>2010</td>
-                            <td>2061</td>
-                            <td>62</td>
-                            <td>1.4</td>
+                            <td>2049</td>
+                            <td>2029</td>
+                            <td>2060</td>
+                            <td>58</td>
+                            <td>1.2</td>
                             <td>0.0</td>
                         </tr>
                     
                         <tr>
                             <td>GET</td>
                             <td>/health</td>
-                            <td>24</td>
+                            <td>29</td>
                             <td>0</td>
-                            <td>2044</td>
-                            <td>2022</td>
-                            <td>2061</td>
+                            <td>2049</td>
+                            <td>2026</td>
+                            <td>2062</td>
                             <td>86</td>
-                            <td>0.8</td>
+                            <td>1.0</td>
                             <td>0.0</td>
                         </tr>
                     
                         <tr class="total">
                             <td></td>
                             <td>Aggregated</td>
-                            <td>76</td>
+                            <td>73</td>
                             <td>0</td>
-                            <td>2040</td>
-                            <td>2010</td>
-                            <td>2061</td>
-                            <td>941</td>
-                            <td>2.6</td>
+                            <td>2049</td>
+                            <td>2026</td>
+                            <td>2062</td>
+                            <td>812</td>
+                            <td>2.5</td>
                             <td>0.0</td>
                         </tr>
                     
@@ -222,23 +222,23 @@ table.stats tr.total td {
                         <tr>
                             <td>GET</td>
                             <td>/</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
                         </tr>
                     
                         <tr>
                             <td>POST</td>
                             <td>/api/calculate</td>
                             <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
@@ -248,9 +248,9 @@ table.stats tr.total td {
                         <tr>
                             <td>GET</td>
                             <td>/health</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
@@ -261,10 +261,10 @@ table.stats tr.total td {
                         <tr class="total">
                             <td></td>
                             <td>Aggregated</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
-                            <td>2000</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
+                            <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
                             <td>2100</td>
@@ -569,11 +569,11 @@ function fillTasksFromRequest() {
     <script>
         
 var stats_history = {
-    "time": ["14:44:12", "14:44:17", "14:44:22", "14:44:27", "14:44:32"].map(server_time => new Date(new Date().setUTCHours(...(server_time.split(":")))).toLocaleTimeString()),
+    "time": ["17:16:47", "17:16:52", "17:16:57", "17:17:02", "17:17:07"].map(server_time => new Date(new Date().setUTCHours(...(server_time.split(":")))).toLocaleTimeString()),
     "user_count": [{"value": 10}, {"value": 10}, {"value": 10}, {"value": 10}, {"value": 10}],
-    "current_rps": [{"users": 10, "value": 0}, {"users": 10, "value": 2.0}, {"users": 10, "value": 3.0}, {"users": 10, "value": 2.8}, {"users": 10, "value": 2.7}],
+    "current_rps": [{"users": 10, "value": 0}, {"users": 10, "value": 2.25}, {"users": 10, "value": 3.0}, {"users": 10, "value": 2.6}, {"users": 10, "value": 2.3}],
     "current_fail_per_sec": [{"users": 10, "value": 0}, {"users": 10, "value": 0}, {"users": 10, "value": 0}, {"users": 10, "value": 0}, {"users": 10, "value": 0}],
-    "response_time_percentile_1": [{"users": 10, "value": 2000.0}, {"users": 10, "value": 2000.0}, {"users": 10, "value": 2000.0}, {"users": 10, "value": 2000.0}, {"users": 10, "value": 2000.0}],
+    "response_time_percentile_1": [{"users": 10, "value": 2000.0}, {"users": 10, "value": 2000.0}, {"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}],
     "response_time_percentile_2": [{"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}, {"users": 10, "value": 2100.0}],
     "markers": [],
 };
